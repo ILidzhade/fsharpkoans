@@ -27,8 +27,7 @@ module ``05: To iterate is human; to recurse, divine`` =
             let rec inner count acc =
                 match count = v with
                 | true -> 0 + acc
-                | false -> (*-1 +*) inner (count+1) (count - 1)
+                | false -> inner (count+1) (acc + 1)
             inner sq 0
-
-        (*not sure how this is the answer: 429981694*, how does acc work?*)
-        myfun 12 |> should equal 20592 
+            
+        myfun 12 |> should equal 429981552
