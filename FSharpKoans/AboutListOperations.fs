@@ -135,7 +135,8 @@ module ``14: List operations are so easy, you could make them yourself!`` =
                 | [] -> newlist
                 | a::b -> 
                     match (f a),b with
-                    | _,[] -> newlist
+                    | true,[] -> a::newlist
+                    | false,[] -> newlist
                     | true,_ -> apply b (a::newlist) 
                     | false,_ -> apply b newlist
             List.rev (apply xs []) 
@@ -156,7 +157,15 @@ module ``14: List operations are so easy, you could make them yourself!`` =
     [<Test>]
     let ``11 Fixed-function filtering, the hard way`` () =
         let filter (xs : int list) : int list =
-            __ // write a function to filter for odd elements only.
+            let rec apply xs newlist =
+                match xs with
+                | [] -> newlist
+                | a::b -> 
+                    match a % 2 = 0 with
+                    | false -> apply (b newlist)
+                    | true -> apply (b a::newlist)
+            List.rev apply xs []
+            // write a function to filter for odd elements only.
         filter [1; 2; 3; 4] |> should equal [1; 3]
         filter [10; 9; 8; 7] |> should equal [9; 7]
         filter [15; 2; 7] |> should equal [15; 7]
