@@ -110,6 +110,6 @@ module ``13: String manipulation`` =
         let ``without surrounding space`` = s.Trim ' '
         ``first index of 'P'`` |> should equal 5
         ``last index of 'P'`` |> should equal 11
-        //``lowercase version`` |> should equal "  dr phil, phd, md, mc, medicine man  "
+        ``lowercase version`` |> should equal "  dr phil, phd, md, mc, medicine man  "
         ``without surrounding space`` |> should equal "Dr Phil, PhD, MD, MC, Medicine Man"
         // ......... and many others!
