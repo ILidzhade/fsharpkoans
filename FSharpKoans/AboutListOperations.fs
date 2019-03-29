@@ -161,10 +161,10 @@ module ``14: List operations are so easy, you could make them yourself!`` =
                 match xs with
                 | [] -> newlist
                 | a::b -> 
-                    match a % 2 = 0 with
-                    | false -> apply (b newlist)
-                    | true -> apply (b a::newlist)
-            List.rev apply xs []
+                    match a % 2 <> 0 with
+                    | false -> apply b newlist
+                    | true -> apply b (a::newlist)
+            List.rev (apply xs [])
             // write a function to filter for odd elements only.
         filter [1; 2; 3; 4] |> should equal [1; 3]
         filter [10; 9; 8; 7] |> should equal [9; 7]
@@ -183,7 +183,15 @@ module ``14: List operations are so easy, you could make them yourself!`` =
     [<Test>]
     let ``12 Specified-function filtering, the hard way`` () =
         let filter (f : 'a -> bool) (xs : 'a list) : 'a list =
-            __ // write a function which filters based on the specified criteria
+            let rec apply xs newlist =
+                match xs with
+                | [] -> newlist
+                | a::b ->
+                    match (f a) with
+                    | false -> apply b newlist
+                    | true -> apply b (a::newlist)
+            List.rev (apply xs [])
+            // write a function which filters based on the specified criteria
         filter (fun x -> x > 19) [9; 5; 23; 66; 4] |> should equal [23; 66]
         filter (fun x -> String.length x = 4) ["moo"; "woof"; "yip"; "nyan"; "meow"]
         |> should equal ["woof"; "nyan"; "meow"]
@@ -192,10 +200,10 @@ module ``14: List operations are so easy, you could make them yourself!`` =
     // Hint: https://msdn.microsoft.com/en-us/library/ee370294.aspx
     [<Test>]
     let ``13 Specified-function filtering, the easy way`` () =
-        __ (fun x -> x > 19) [9; 5; 23; 66; 4] |> should equal [23; 66]
-        __ (fun x -> String.length x = 4) ["moo"; "woof"; "yip"; "nyan"; "meow"]
+        List.filter (fun x -> x > 19) [9; 5; 23; 66; 4] |> should equal [23; 66]
+        List.filter (fun x -> String.length x = 4) ["moo"; "woof"; "yip"; "nyan"; "meow"]
         |> should equal ["woof"; "nyan"; "meow"]
-        __ (fun (a,b) -> a*b >= 14) [9,3; 4,2; 4,5] |> should equal [9,3; 4,5]
+        List.filter (fun (a,b) -> a*b >= 14) [9,3; 4,2; 4,5] |> should equal [9,3; 4,5]
 
 (*
 A 'fold' starts from a specified state, and generates more states depending
@@ -230,18 +238,28 @@ or something else), it's likely that you'll be able to use a fold.
     [<Test>]
     let ``14 A fold which sums a list`` () =
         let fold initialState xs =
-            __ // write a function to do what's described above
+            let rec apply xs state =
+                match xs with
+                | [] -> state
+                | a::b -> apply b (state + a)
+            apply xs initialState
+            // write a function to do what's described above
         fold 0 [1; 2; 3; 4] |> should equal 10
         fold 100 [2;4;6;8] |> should equal 120
 
     [<Test>]
     let ``15 A fold which multiplies a list`` () =
         let fold initialState xs =
-            __ // write a function to multiply the elements of a list
-        fold __ [99] |> should equal 99
-        fold 2 [__] |> should equal 22
-        fold __ [1;3;5;7] |> should equal 105
-        fold __ [2;5;3] |> should equal 0
+            let rec apply xs state =
+                match xs with
+                | [] -> state
+                | a::b -> apply b (state * a)
+            apply xs initialState
+            // write a function to multiply the elements of a list
+        fold 1 [99] |> should equal 99
+        fold 2 [11] |> should equal 22
+        fold 1 [1;3;5;7] |> should equal 105
+        fold 0 [2;5;3] |> should equal 0
 
     // you probably know the drill by now.  It'd be good to have
     // a function which does the state-generation stuff, wouldn't
@@ -250,7 +268,12 @@ or something else), it's likely that you'll be able to use a fold.
     [<Test>]
     let ``16 Folding, the hard way`` () =
         let fold (f : 'a -> 'b -> 'a) (initialState : 'a) (xs : 'b list) : 'a =
-            __  // write a function to do a fold.
+            let rec apply xs state =
+                match xs with
+                | [] -> state
+                | a::b -> apply b (f state a)
+            apply xs initialState
+            // write a function to do a fold.
         fold (+) 0 [1;2;3;4] |> should equal 10
         fold (*) 2 [1;2;3;4] |> should equal 48
         fold (fun state item -> sprintf "%s %s" state item) "items:" ["dog"; "cat"; "bat"; "rat"]
@@ -294,7 +317,12 @@ or something else), it's likely that you'll be able to use a fold.
     [<Test>]
     let ``20 init: creating a list based on a size and a function`` () =
         let init (n : int) (f : int -> 'a) : 'a list =
-            __ // Does this: https://msdn.microsoft.com/en-us/library/ee370497.aspx
+            let rec apply x newlist =
+                match x < n with
+                | false -> newlist
+                | true -> apply (x + 1) ((f x)::newlist)
+            List.rev (apply 0 [])
+            // Does this: https://msdn.microsoft.com/en-us/library/ee370497.aspx
         init 10 (fun x -> x*2) |> should equal [0;2;4;6;8;10;12;14;16;18]
         init 4 (sprintf "(%d)") |> should equal ["(0)";"(1)";"(2)";"(3)"]
 
@@ -302,7 +330,15 @@ or something else), it's likely that you'll be able to use a fold.
     [<Test>]
     let ``21 tryFind: find the first matching element, if any`` () =
         let tryFind (p : 'a -> bool) (xs : 'a list) : 'a option =
-            __ // Does this: https://msdn.microsoft.com/en-us/library/ee353506.aspx
+            let rec apply xs =
+                match xs with
+                | [] -> None
+                | a::b ->
+                    match p a with
+                    | false -> apply b
+                    | true -> Some a
+            apply xs
+            // Does this: https://msdn.microsoft.com/en-us/library/ee353506.aspx
         tryFind (fun x -> x<=45) [100;85;25;55;6] |> should equal (Some 25)
         tryFind (fun x -> x>450) [100;85;25;55;6] |> should equal None
 
@@ -310,7 +346,15 @@ or something else), it's likely that you'll be able to use a fold.
     [<Test>]
     let ``22 tryPick: find the first matching element, if any, and transform it`` () =
         let tryPick (p : 'a -> 'b option) (xs : 'a list) : 'b option =
-            __ // Does this: https://msdn.microsoft.com/en-us/library/ee353814.aspx
+            let rec apply xs =
+                match xs with
+                | [] -> None
+                | a::b ->
+                    match p a with
+                    | None -> apply b
+                    | Some c -> (Some c)
+            apply xs
+            // Does this: https://msdn.microsoft.com/en-us/library/ee353814.aspx
         let f x =
             match x<=45 with
             | true -> Some(x*2)
@@ -340,7 +384,15 @@ or something else), it's likely that you'll be able to use a fold.
         // - why can't it take an 'a->'b, instead of an 'a->'b option ?
         // - why does it return a 'b list, and not a 'b list option ?
         let choose (p : 'a -> 'b option) (xs : 'a list) : 'b list =
-            __ // Does this: https://msdn.microsoft.com/en-us/library/ee353456.aspx
+            let rec apply xs newlist =
+                match xs with
+                | [] -> newlist
+                | a::b ->
+                    match p a with
+                    | None -> apply b newlist
+                    | Some c -> apply b (c::newlist)
+            List.rev (apply xs [])
+            // Does this: https://msdn.microsoft.com/en-us/library/ee353456.aspx
         let f x =
             match x<=45 with
             | true -> Some(x*2)
@@ -358,7 +410,12 @@ or something else), it's likely that you'll be able to use a fold.
     [<Test>]
     let ``24 mapi: like map, but passes along an item index as well`` () =
         let mapi (f : int -> 'a -> 'b) (xs : 'a list) : 'b list =
-            __ // Does this: https://msdn.microsoft.com/en-us/library/ee353425.aspx
+            let rec apply xs newlist indx =
+                match xs with
+                | [] -> newlist
+                | a::b -> apply b ((f indx a)::newlist indx + 1)
+            List.rev (apply (xs [] 0))
+            // Does this: https://msdn.microsoft.com/en-us/library/ee353425.aspx
         mapi (fun i x -> -i, x+1) [9;8;7;6] |> should equal [0,10; -1,9; -2,8; -3,7]
         let hailstone i t =
             match i%2 with
