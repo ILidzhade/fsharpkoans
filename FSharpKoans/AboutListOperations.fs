@@ -21,6 +21,8 @@ Run it with some sample input, and see what it produces.
 
 module ``14: List operations are so easy, you could make them yourself!`` =
     open System
+    open System.Diagnostics
+    open System.ComponentModel
 
     (*
         Once you've learned about the Easy Way of doing something,
@@ -283,17 +285,25 @@ or something else), it's likely that you'll be able to use a fold.
     // Hint: https://msdn.microsoft.com/en-us/library/ee353894.aspx
     [<Test>]
     let ``17 Folding, the easy way`` () =
-        __ (+) 0 [1;2;3;4] |> should equal 10
-        __ (*) 2 [1;2;3;4] |> should equal 48
-        __ (fun state item -> sprintf "%s %s" state item) "items:" ["dog"; "cat"; "bat"; "rat"]
+        List.fold (+) 0 [1;2;3;4] |> should equal 10
+        List.fold (*) 2 [1;2;3;4] |> should equal 48
+        List.fold (fun state item -> sprintf "%s %s" state item) "items:" ["dog"; "cat"; "bat"; "rat"]
         |> should equal "items: dog cat bat rat"
-        __ (fun state item -> state + float item + 0.5) 0.8 [1;3;5;7] |> should equal 18.8
+        List.fold (fun state item -> state + float item + 0.5) 0.8 [1;3;5;7] |> should equal 18.8
 
     // List.exists
     [<Test>]
     let ``18 exists: finding whether any matching item exists`` () =
         let exists (f : 'a -> bool) (xs : 'a list) : bool =
-            __ // Does this: https://msdn.microsoft.com/en-us/library/ee370309.aspx
+            let rec apply xs =
+                match xs with
+                | [] -> false
+                | a::b ->
+                    match f a with
+                    | false -> apply b
+                    | true -> true
+            apply xs
+            // Does this: https://msdn.microsoft.com/en-us/library/ee370309.aspx
         exists ((=) 4) [7;6;5;4;5] |> should equal true
         exists (fun x -> String.length x < 4) ["true"; "false"] |> should equal false
         exists (fun _ -> true) [] |> should equal false
@@ -302,7 +312,24 @@ or something else), it's likely that you'll be able to use a fold.
     [<Test>]
     let ``19 partition: splitting a list based on a criterion`` () =
         let partition (f : 'a -> bool) (xs : 'a list) : ('a list) * ('a list) =
-            __ // Does this: https://msdn.microsoft.com/en-us/library/ee353782.aspx
+            let rec alistrec xs alist = 
+                match xs with
+                | [] -> alist
+                | a::b ->
+                    match f a with
+                    | true -> alistrec (b) (a::alist)
+                    | false -> alistrec (b) alist
+            let rec blistrec xs blist = 
+                match xs with
+                | [] -> blist
+                | a::b ->
+                    match f a with
+                    | true -> blistrec (b) blist
+                    | false -> blistrec (b) (a::blist)
+                
+            let a, b = (List.rev (alistrec xs [])), (List.rev (blistrec xs []))
+            a,b
+            // Does this: https://msdn.microsoft.com/en-us/library/ee353782.aspx
         let a, b = partition (fun x -> x%2=0) [1;2;3;4;5;6;7;8;9;10]
         a |> should equal [2;4;6;8;10]
         b |> should equal [1;3;5;7;9]
@@ -409,12 +436,12 @@ or something else), it's likely that you'll be able to use a fold.
 
     [<Test>]
     let ``24 mapi: like map, but passes along an item index as well`` () =
-        let mapi (f : int -> 'a -> 'b) (xs : 'a list) : 'b list =
-            let rec apply xs newlist indx =
+        let mapi (f : int -> 'a -> 'b) (xs : 'a list) : 'b list = __
+            (*let rec apply xs newlist indx =
                 match xs with
                 | [] -> newlist
-                | a::b -> apply b ((f indx a)::newlist indx + 1)
-            List.rev (apply (xs [] 0))
+                | a::b -> apply (b ((f indx a)::newlist indx + 1))
+            List.rev (apply (xs [] 0))*)
             // Does this: https://msdn.microsoft.com/en-us/library/ee353425.aspx
         mapi (fun i x -> -i, x+1) [9;8;7;6] |> should equal [0,10; -1,9; -2,8; -3,7]
         let hailstone i t =
